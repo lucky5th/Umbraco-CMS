@@ -1854,7 +1854,7 @@
       },
       "IApiContentModel": {
         "required": [
-          "$type"
+          "contentType"
         ],
         "oneOf": [
           {
@@ -1874,7 +1874,7 @@
       },
       "IApiContentResponseModel": {
         "required": [
-          "$type"
+          "contentType"
         ],
         "oneOf": [
           {
@@ -2022,7 +2022,7 @@
       },
       "IApiElementModel": {
         "required": [
-          "$type"
+          "contentType"
         ],
         "oneOf": [
           {
@@ -2087,7 +2087,7 @@
       },
       "IApiMediaWithCropsModel": {
         "required": [
-          "$type"
+          "mediaType"
         ],
         "oneOf": [
           {
@@ -2131,7 +2131,7 @@
       },
       "IApiMediaWithCropsResponseModel": {
         "required": [
-          "$type"
+          "mediaType"
         ],
         "oneOf": [
           {
@@ -2929,7 +2929,7 @@
               "properties": {
                 "content": {
                   "required": [
-                    "$type"
+                    "contentType"
                   ],
                   "oneOf": [
                     {
@@ -2945,7 +2945,7 @@
                 },
                 "settings": {
                   "required": [
-                    "$type"
+                    "contentType"
                   ],
                   "oneOf": [
                     {

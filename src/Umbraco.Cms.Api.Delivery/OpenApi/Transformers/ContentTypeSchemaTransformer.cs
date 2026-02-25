@@ -241,9 +241,10 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
             derivedTypeSchemas.Add(derivedTypeSchema);
         }
 
+        var typePropertyName = GetTypePropertyName(itemType);
         schema.Discriminator = new OpenApiDiscriminator
         {
-            PropertyName = GetTypePropertyName(itemType),
+            PropertyName = typePropertyName,
             Mapping = new Dictionary<string, OpenApiSchemaReference>(),
         };
         schema.OneOf ??= new List<IOpenApiSchema>();
@@ -258,6 +259,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
         // Remove all schema properties that are now handled by the derived types
         schema.Type = null;
         schema.AnyOf = null;
+        schema.Required = new HashSet<string> { typePropertyName };
     }
 
     /// <summary>
