@@ -265,7 +265,7 @@ public class DeliveryApiSettings
     /// </summary>
     public class OpenApiSettings
     {
-        private const bool StaticGenerateContentTypeSchemas = true;
+        private const bool StaticGenerateContentTypeSchemas = false;
 
         /// <summary>
         ///     Gets or sets a value indicating whether the Delivery API OpenAPI document should include
@@ -276,9 +276,8 @@ public class DeliveryApiSettings
         ///     <c>false</c> to use only the base interface schemas.
         /// </value>
         /// <remarks>
-        ///     When enabled (default), the OpenAPI document will contain schemas like "ArticleContentResponseModel"
-        ///     for each content type, with their specific properties. When disabled, only the base schemas like
-        ///     "IApiContentResponseModel" will be used.
+        ///     When enabled, the OpenAPI document will contain content-type-specific schemas with their
+        ///     specific properties. When disabled (default), only the base interface schemas will be used.
         /// </remarks>
         [DefaultValue(StaticGenerateContentTypeSchemas)]
         public bool GenerateContentTypeSchemas { get; set; } = StaticGenerateContentTypeSchemas;
