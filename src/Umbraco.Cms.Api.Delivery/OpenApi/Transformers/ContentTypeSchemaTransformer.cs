@@ -42,9 +42,15 @@ namespace Umbraco.Cms.Api.Delivery.OpenApi.Transformers;
 /// </para>
 /// <para>
 /// <b>Phase 2 - Document Transformation:</b> After all schemas are generated, the document transformer
-/// runs and replaces all placeholder schemas with proper <c>$ref</c> references to the actual schemas.
-/// This is done by <see cref="ReplacePlaceholderSchemas(OpenApiDocument, IOpenApiSchema)"/> which recursively walks through all schemas
-/// and substitutes placeholders with <see cref="OpenApiSchemaReference"/> instances.
+/// resolves inline schemas into proper <c>$ref</c> references. This handles two cases:
+/// <list type="bullet">
+///   <item>Circular reference placeholders (marked with <c>x-recursive-ref</c>) created during Phase 1</item>
+///   <item>Componentized schemas (marked with <c>x-schema-id</c>) that the framework did not automatically
+///   resolve to <c>$ref</c> — this can happen for schemas reached through properties or composition
+///   rather than as direct API response types</item>
+/// </list>
+/// This is done by <see cref="ResolveSchemaReferences(OpenApiDocument, IOpenApiSchema)"/> which recursively walks
+/// through all schemas and substitutes matching entries with <see cref="OpenApiSchemaReference"/> instances.
 /// </para>
 /// </remarks>
 public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IOpenApiDocumentTransformer
@@ -111,7 +117,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
 
         foreach (IOpenApiSchema componentsSchema in document.Components.Schemas.Values)
         {
-            ReplacePlaceholderSchemas(document, componentsSchema);
+            ResolveSchemaReferences(document, componentsSchema);
         }
 
         return Task.CompletedTask;
@@ -228,7 +234,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
         OpenApiSchemaTransformerContext context,
         PublishedItemType itemType,
         IEnumerable<ContentTypeSchemaInfo> contentTypes,
-        Func<ContentTypeSchemaInfo, List<IOpenApiSchema>, Task<OpenApiSchemaReference>> contentTypeSchemaMapper,
+        Func<ContentTypeSchemaInfo, List<IOpenApiSchema>, Task<OpenApiSchema>> contentTypeSchemaFactory,
         CancellationToken cancellationToken)
     {
         List<IOpenApiSchema> derivedTypeSchemas = [];
@@ -241,6 +247,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
             derivedTypeSchemas.Add(derivedTypeSchema);
         }
 
+        OpenApiDocument document = context.GetRequiredDocument();
         var typePropertyName = GetTypePropertyName(itemType);
         schema.Discriminator = new OpenApiDiscriminator
         {
@@ -251,8 +258,9 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
 
         foreach (ContentTypeSchemaInfo contentType in contentTypes)
         {
-            OpenApiSchemaReference contentTypeSchema = await contentTypeSchemaMapper(contentType, derivedTypeSchemas);
-            schema.Discriminator.Mapping[contentType.Alias] = contentTypeSchema;
+            OpenApiSchema contentTypeSchema = await contentTypeSchemaFactory(contentType, derivedTypeSchemas);
+            var schemaId = (string)contentTypeSchema.Metadata![SchemaIdMetadataKey];
+            schema.Discriminator.Mapping[contentType.Alias] = new OpenApiSchemaReference(schemaId, document);
             schema.OneOf.Add(contentTypeSchema);
         }
 
@@ -325,7 +333,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
         return new OpenApiSchemaReference(schemaId, document);
     }
 
-    private async Task<OpenApiSchemaReference> CreateContentTypeSchema(
+    private async Task<OpenApiSchema> CreateContentTypeSchema(
         string schemaId,
         PublishedItemType itemType,
         ContentTypeSchemaInfo contentType,
@@ -350,7 +358,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
 
         OpenApiDocument document = context.GetRequiredDocument();
         document.AddComponent(schemaId, schema);
-        return new OpenApiSchemaReference(schemaId, document);
+        return schema;
     }
 
     private async Task<OpenApiSchemaReference> CreatePropertiesSchema(
@@ -368,7 +376,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
                 ..contentType.CompositionSchemaIds.Select(compositionSchemaId
                     => GetPlaceholderSchema($"{compositionSchemaId}{PropertiesModelSuffix}"))
             ],
-            Properties = await ContentTypePropertiesMapper(contentType, context, cancellationToken),
+            Properties = await CreateContentTypeProperties(contentType, context, cancellationToken),
             Metadata = new Dictionary<string, object> { [SchemaIdMetadataKey] = schemaId },
             AdditionalPropertiesAllowed = false,
         };
@@ -378,7 +386,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
         return new OpenApiSchemaReference(schemaId, document);
     }
 
-    private async Task<Dictionary<string, IOpenApiSchema>> ContentTypePropertiesMapper(
+    private async Task<Dictionary<string, IOpenApiSchema>> CreateContentTypeProperties(
         ContentTypeSchemaInfo contentType,
         OpenApiSchemaTransformerContext context,
         CancellationToken cancellationToken)
@@ -425,7 +433,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
     /// </summary>
     /// <remarks>
     /// The placeholder contains metadata with the target schema ID. During the document transformation phase,
-    /// <see cref="ReplacePlaceholderSchemas(OpenApiDocument, IOpenApiSchema)"/> will replace these placeholders with actual schema references.
+    /// <see cref="ResolveSchemaReferences(OpenApiDocument, IOpenApiSchema)"/> will replace these placeholders with actual schema references.
     /// </remarks>
     /// <param name="schemaId">The ID of the schema this placeholder represents.</param>
     /// <returns>A placeholder schema with metadata indicating the target schema reference.</returns>
@@ -439,22 +447,36 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
         };
 
     /// <summary>
-    /// Recursively replaces placeholder schemas with proper <c>$ref</c> references to the actual schemas.
+    /// Recursively resolves inline schemas into proper <c>$ref</c> references.
     /// </summary>
     /// <remarks>
     /// This method is called during the document transformation phase (after all schemas have been generated).
-    /// It walks through all schema properties, allOf, oneOf, and anyOf collections, looking for placeholders
-    /// created by <see cref="GetPlaceholderSchema"/>. Each placeholder is replaced with an
-    /// <see cref="OpenApiSchemaReference"/> pointing to the actual schema in the document's components.
+    /// It walks through all schema properties, allOf, oneOf, and anyOf collections, resolving two types of
+    /// inline schemas:
+    /// <list type="bullet">
+    ///   <item>Circular reference placeholders created by <see cref="GetPlaceholderSchema"/> (marked with <c>x-recursive-ref</c>)</item>
+    ///   <item>Componentized schemas that should be references (marked with <c>x-schema-id</c>)</item>
+    /// </list>
+    /// Each match is replaced with an <see cref="OpenApiSchemaReference"/> pointing to the actual schema in the document's components.
     /// </remarks>
     /// <param name="document">The OpenAPI document containing the registered schema components.</param>
     /// <param name="schema">The schema to process (will be modified in place).</param>
-    private static void ReplacePlaceholderSchemas(OpenApiDocument document, IOpenApiSchema schema)
+    private static void ResolveSchemaReferences(OpenApiDocument document, IOpenApiSchema schema)
     {
         // Replace in allOf, oneOf, anyOf
-        ReplacePlaceholderSchemas(document, schema.AllOf);
-        ReplacePlaceholderSchemas(document, schema.OneOf);
-        ReplacePlaceholderSchemas(document, schema.AnyOf);
+        ResolveSchemaReferences(document, schema.AllOf);
+        ResolveSchemaReferences(document, schema.OneOf);
+        ResolveSchemaReferences(document, schema.AnyOf);
+
+        // Process array items
+        if (schema is OpenApiSchema { Items: OpenApiSchema itemsSchema } parentSchema)
+        {
+            parentSchema.Items = GetActualSchemaOrReference(document, itemsSchema, out var itemsReplaced);
+            if (!itemsReplaced)
+            {
+                ResolveSchemaReferences(document, itemsSchema);
+            }
+        }
 
         if (schema.Properties is not { Count: > 0 })
         {
@@ -473,23 +495,15 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
             schema.Properties[propertyKey] = GetActualSchemaOrReference(document, innerSchema, out var replaced);
             if (replaced)
             {
-                // If we replaced the schema, we don't need to recurse into it
-                continue;
-            }
-
-            innerSchema.Items = GetActualSchemaOrReference(document, innerSchema.Items, out replaced);
-            if (replaced)
-            {
-                // If we replaced the schema, we don't need to recurse into it
                 continue;
             }
 
             // Recursive call to handle the property schema
-            ReplacePlaceholderSchemas(document, innerSchema);
+            ResolveSchemaReferences(document, innerSchema);
         }
     }
 
-    private static void ReplacePlaceholderSchemas(OpenApiDocument document, IList<IOpenApiSchema>? schemas)
+    private static void ResolveSchemaReferences(OpenApiDocument document, IList<IOpenApiSchema>? schemas)
     {
         if (schemas is null || schemas.Count == 0)
         {
@@ -502,7 +516,7 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
             schemas[i] = GetActualSchemaOrReference(document, allOfSchema, out var replaced);
             if (!replaced)
             {
-                ReplacePlaceholderSchemas(document, schemas[i]);
+                ResolveSchemaReferences(document, schemas[i]);
             }
         }
     }
@@ -519,16 +533,27 @@ public sealed class ContentTypeSchemaTransformer : IOpenApiSchemaTransformer, IO
             return schema;
         }
 
-        // Check if this is a placeholder schema
-        if (openApiSchema.Metadata?.TryGetValue(RecursiveRefMetadataKey, out var recursiveRefIdObj) != true
-            || recursiveRefIdObj is not string recursiveRefId)
+        // Check if this is a placeholder schema (circular reference)
+        if (openApiSchema.Metadata?.TryGetValue(RecursiveRefMetadataKey, out var recursiveRefIdObj) == true
+            && recursiveRefIdObj is string recursiveRefId)
         {
-            replaced = false;
-            return schema;
+            replaced = true;
+            return new OpenApiSchemaReference(recursiveRefId, document);
         }
 
-        // Return the actual schema
-        replaced = true;
-        return new OpenApiSchemaReference(recursiveRefId, document);
+        // Check if this is a componentized schema that should be a $ref
+        // Only resolve if the component actually exists — the framework also sets x-schema-id on
+        // schemas that may not end up as components.
+        if (openApiSchema.Metadata?.TryGetValue(SchemaIdMetadataKey, out var schemaIdObj) == true
+            && schemaIdObj is string schemaId
+            && !string.IsNullOrEmpty(schemaId)
+            && document.Components?.Schemas?.ContainsKey(schemaId) == true)
+        {
+            replaced = true;
+            return new OpenApiSchemaReference(schemaId, document);
+        }
+
+        replaced = false;
+        return schema;
     }
 }

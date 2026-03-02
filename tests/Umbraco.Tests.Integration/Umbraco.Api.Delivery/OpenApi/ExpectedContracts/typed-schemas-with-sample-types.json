@@ -1155,21 +1155,6 @@
   },
   "components": {
     "schemas": {
-      "ApiBlockItemModel": {
-        "required": [
-          "content",
-          "settings"
-        ],
-        "type": "object",
-        "properties": {
-          "content": {
-            "$ref": "#/components/schemas/IApiElementModel"
-          },
-          "settings": {
-            "$ref": "#/components/schemas/IApiElementModel"
-          }
-        }
-      },
       "ApiBlockListModel": {
         "required": [
           "items"
@@ -1182,7 +1167,45 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ApiBlockItemModel"
+              "required": [
+                "content",
+                "settings"
+              ],
+              "type": "object",
+              "properties": {
+                "content": {
+                  "required": [
+                    "contentType"
+                  ],
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TestElementElementModel"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "contentType",
+                    "mapping": {
+                      "testElement": "#/components/schemas/TestElementElementModel"
+                    }
+                  }
+                },
+                "settings": {
+                  "required": [
+                    "contentType"
+                  ],
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TestElementElementModel"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "contentType",
+                    "mapping": {
+                      "testElement": "#/components/schemas/TestElementElementModel"
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -1290,7 +1313,44 @@
             "format": "date-time"
           },
           "route": {
-            "$ref": "#/components/schemas/IApiContentRouteModel"
+            "required": [
+              "path",
+              "startItem"
+            ],
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "queryString": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "startItem": {
+                "required": [
+                  "id",
+                  "path"
+                ],
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "path": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  }
+                }
+              }
+            }
           },
           "id": {
             "type": "string",
@@ -1302,7 +1362,44 @@
           "cultures": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/IApiContentRouteModel"
+              "required": [
+                "path",
+                "startItem"
+              ],
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "queryString": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "startItem": {
+                  "required": [
+                    "id",
+                    "path"
+                  ],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "path": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -1342,7 +1439,21 @@
             "type": "string"
           },
           "focalPoint": {
-            "$ref": "#/components/schemas/ImageFocalPointModel"
+            "required": [
+              "left",
+              "top"
+            ],
+            "type": "object",
+            "properties": {
+              "left": {
+                "type": "number",
+                "format": "double"
+              },
+              "top": {
+                "type": "number",
+                "format": "double"
+              }
+            }
           },
           "crops": {
             "type": [
@@ -1350,7 +1461,56 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/ImageCropModel"
+              "required": [
+                "alias",
+                "width",
+                "height",
+                "coordinates"
+              ],
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "width": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "height": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "coordinates": {
+                  "required": [
+                    "x1",
+                    "y1",
+                    "x2",
+                    "y2"
+                  ],
+                  "type": "object",
+                  "properties": {
+                    "x1": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "y1": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "x2": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "y2": {
+                      "type": "number",
+                      "format": "double"
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -1626,7 +1786,31 @@
                   "format": "int32"
                 },
                 "coordinates": {
-                  "$ref": "#/components/schemas/ImageCropCoordinatesModel"
+                  "required": [
+                    "x1",
+                    "y1",
+                    "x2",
+                    "y2"
+                  ],
+                  "type": "object",
+                  "properties": {
+                    "x1": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "y1": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "x2": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "y2": {
+                      "type": "number",
+                      "format": "double"
+                    }
+                  }
                 }
               }
             }
@@ -1668,29 +1852,7 @@
             "const": "articlePage"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "headline": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "bodyText": {
-                "$ref": "#/components/schemas/RichTextModel"
-              },
-              "publishDate": {
-                "type": [
-                  "null",
-                  "string"
-                ],
-                "format": "date-time"
-              },
-              "relatedArticles": {
-                "$ref": "#/components/schemas/IApiContentModel"
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/ArticlePagePropertiesModel"
           }
         },
         "additionalProperties": false
@@ -1755,29 +1917,7 @@
             "const": "File"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "umbracoFile": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoExtension": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoBytes": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int64"
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/FilePropertiesModel"
           }
         },
         "additionalProperties": false
@@ -1842,8 +1982,7 @@
             "const": "Folder"
           },
           "properties": {
-            "type": "object",
-            "additionalProperties": false
+            "$ref": "#/components/schemas/FolderPropertiesModel"
           }
         },
         "additionalProperties": false
@@ -1878,95 +2017,10 @@
         ],
         "oneOf": [
           {
-            "required": [
-              "contentType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiContentResponseModel"
-              }
-            ],
-            "properties": {
-              "contentType": {
-                "const": "articlePage"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "headline": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "bodyText": {
-                    "$ref": "#/components/schemas/RichTextModel"
-                  },
-                  "publishDate": {
-                    "type": [
-                      "null",
-                      "string"
-                    ],
-                    "format": "date-time"
-                  },
-                  "relatedArticles": {
-                    "$ref": "#/components/schemas/IApiContentModel"
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/ArticlePageContentResponseModel"
           },
           {
-            "required": [
-              "contentType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiContentResponseModel"
-              }
-            ],
-            "properties": {
-              "contentType": {
-                "const": "landingPage"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "pageTitle": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "introduction": {
-                    "$ref": "#/components/schemas/RichTextModel"
-                  },
-                  "contentBlocks": {
-                    "required": [
-                      "items"
-                    ],
-                    "type": [
-                      "null",
-                      "object"
-                    ],
-                    "properties": {
-                      "items": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/ApiBlockItemModel"
-                        }
-                      }
-                    }
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/LandingPageContentResponseModel"
           }
         ],
         "discriminator": {
@@ -1974,114 +2028,6 @@
           "mapping": {
             "articlePage": "#/components/schemas/ArticlePageContentResponseModel",
             "landingPage": "#/components/schemas/LandingPageContentResponseModel"
-          }
-        }
-      },
-      "IApiContentRouteModel": {
-        "required": [
-          "path",
-          "startItem"
-        ],
-        "type": "object",
-        "properties": {
-          "path": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "queryString": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "startItem": {
-            "$ref": "#/components/schemas/IApiContentStartItemModel"
-          }
-        }
-      },
-      "IApiContentStartItemModel": {
-        "required": [
-          "id",
-          "path"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "path": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "IApiElementModel": {
-        "required": [
-          "contentType"
-        ],
-        "oneOf": [
-          {
-            "required": [
-              "contentType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "required": [
-                  "contentType",
-                  "id",
-                  "properties"
-                ],
-                "type": "object",
-                "properties": {
-                  "contentType": {
-                    "type": "string"
-                  },
-                  "id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "properties": {
-                    "type": "object"
-                  }
-                }
-              }
-            ],
-            "properties": {
-              "contentType": {
-                "const": "testElement"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "subtitle": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
-          }
-        ],
-        "discriminator": {
-          "propertyName": "contentType",
-          "mapping": {
-            "testElement": "#/components/schemas/TestElementElementModel"
           }
         }
       },
@@ -2135,354 +2081,28 @@
         ],
         "oneOf": [
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "Folder"
-              },
-              "properties": {
-                "type": "object",
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/FolderMediaWithCropsResponseModel"
           },
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "Image"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "umbracoFile": {
-                    "required": [
-                      "url",
-                      "focalPoint",
-                      "crops"
-                    ],
-                    "type": [
-                      "null",
-                      "object"
-                    ],
-                    "properties": {
-                      "url": {
-                        "type": "string"
-                      },
-                      "focalPoint": {
-                        "$ref": "#/components/schemas/ImageFocalPointModel"
-                      },
-                      "crops": {
-                        "type": [
-                          "null",
-                          "array"
-                        ],
-                        "items": {
-                          "$ref": "#/components/schemas/ImageCropModel"
-                        }
-                      }
-                    }
-                  },
-                  "umbracoWidth": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int32"
-                  },
-                  "umbracoHeight": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int32"
-                  },
-                  "umbracoBytes": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int64"
-                  },
-                  "umbracoExtension": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/ImageMediaWithCropsResponseModel"
           },
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "File"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "umbracoFile": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoExtension": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoBytes": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int64"
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/FileMediaWithCropsResponseModel"
           },
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "umbracoMediaVideo"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "umbracoFile": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoExtension": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoBytes": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int64"
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaVideoMediaWithCropsResponseModel"
           },
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "umbracoMediaAudio"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "umbracoFile": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoExtension": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoBytes": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int64"
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaAudioMediaWithCropsResponseModel"
           },
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "umbracoMediaArticle"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "umbracoFile": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoExtension": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoBytes": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int64"
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaArticleMediaWithCropsResponseModel"
           },
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "umbracoMediaVectorGraphics"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "umbracoFile": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoExtension": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "umbracoBytes": {
-                    "type": [
-                      "null",
-                      "integer"
-                    ],
-                    "format": "int64"
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaVectorGraphicsMediaWithCropsResponseModel"
           },
           {
-            "required": [
-              "mediaType"
-            ],
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ApiMediaWithCropsResponseModel"
-              }
-            ],
-            "properties": {
-              "mediaType": {
-                "const": "video"
-              },
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "videoTitle": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "videoFile": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "thumbnailImage": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/IApiMediaWithCropsModel"
-                    }
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/VideoMediaWithCropsResponseModel"
           }
         ],
         "discriminator": {
@@ -2496,78 +2116,6 @@
             "umbracoMediaArticle": "#/components/schemas/UmbracoMediaArticleMediaWithCropsResponseModel",
             "umbracoMediaVectorGraphics": "#/components/schemas/UmbracoMediaVectorGraphicsMediaWithCropsResponseModel",
             "video": "#/components/schemas/VideoMediaWithCropsResponseModel"
-          }
-        }
-      },
-      "ImageCropCoordinatesModel": {
-        "required": [
-          "x1",
-          "y1",
-          "x2",
-          "y2"
-        ],
-        "type": "object",
-        "properties": {
-          "x1": {
-            "type": "number",
-            "format": "double"
-          },
-          "y1": {
-            "type": "number",
-            "format": "double"
-          },
-          "x2": {
-            "type": "number",
-            "format": "double"
-          },
-          "y2": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      },
-      "ImageCropModel": {
-        "required": [
-          "alias",
-          "width",
-          "height",
-          "coordinates"
-        ],
-        "type": "object",
-        "properties": {
-          "alias": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "width": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "height": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "coordinates": {
-            "$ref": "#/components/schemas/ImageCropCoordinatesModel"
-          }
-        }
-      },
-      "ImageFocalPointModel": {
-        "required": [
-          "left",
-          "top"
-        ],
-        "type": "object",
-        "properties": {
-          "left": {
-            "type": "number",
-            "format": "double"
-          },
-          "top": {
-            "type": "number",
-            "format": "double"
           }
         }
       },
@@ -2606,65 +2154,7 @@
             "const": "Image"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "umbracoFile": {
-                "required": [
-                  "url",
-                  "focalPoint",
-                  "crops"
-                ],
-                "type": [
-                  "null",
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "type": "string"
-                  },
-                  "focalPoint": {
-                    "$ref": "#/components/schemas/ImageFocalPointModel"
-                  },
-                  "crops": {
-                    "type": [
-                      "null",
-                      "array"
-                    ],
-                    "items": {
-                      "$ref": "#/components/schemas/ImageCropModel"
-                    }
-                  }
-                }
-              },
-              "umbracoWidth": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int32"
-              },
-              "umbracoHeight": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int32"
-              },
-              "umbracoBytes": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int64"
-              },
-              "umbracoExtension": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/ImagePropertiesModel"
           }
         },
         "additionalProperties": false
@@ -2673,32 +2163,7 @@
         "type": "object",
         "properties": {
           "umbracoFile": {
-            "required": [
-              "url",
-              "focalPoint",
-              "crops"
-            ],
-            "type": [
-              "null",
-              "object"
-            ],
-            "properties": {
-              "url": {
-                "type": "string"
-              },
-              "focalPoint": {
-                "$ref": "#/components/schemas/ImageFocalPointModel"
-              },
-              "crops": {
-                "type": [
-                  "null",
-                  "array"
-                ],
-                "items": {
-                  "$ref": "#/components/schemas/ImageCropModel"
-                }
-              }
-            }
+            "$ref": "#/components/schemas/ApiImageCropperValueModel"
           },
           "umbracoWidth": {
             "type": [
@@ -2765,36 +2230,7 @@
             "const": "landingPage"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "pageTitle": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "introduction": {
-                "$ref": "#/components/schemas/RichTextModel"
-              },
-              "contentBlocks": {
-                "required": [
-                  "items"
-                ],
-                "type": [
-                  "null",
-                  "object"
-                ],
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/ApiBlockItemModel"
-                    }
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/LandingPagePropertiesModel"
           }
         },
         "additionalProperties": false
@@ -2812,21 +2248,7 @@
             "$ref": "#/components/schemas/RichTextModel"
           },
           "contentBlocks": {
-            "required": [
-              "items"
-            ],
-            "type": [
-              "null",
-              "object"
-            ],
-            "properties": {
-              "items": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ApiBlockItemModel"
-                }
-              }
-            }
+            "$ref": "#/components/schemas/ApiBlockListModel"
           }
         },
         "additionalProperties": false
@@ -2971,24 +2393,7 @@
         "type": "object",
         "allOf": [
           {
-            "required": [
-              "contentType",
-              "id",
-              "properties"
-            ],
-            "type": "object",
-            "properties": {
-              "contentType": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "properties": {
-                "type": "object"
-              }
-            }
+            "$ref": "#/components/schemas/ApiElementModel"
           }
         ],
         "properties": {
@@ -2996,22 +2401,7 @@
             "const": "testElement"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "title": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "subtitle": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/TestElementPropertiesModel"
           }
         },
         "additionalProperties": false
@@ -3069,29 +2459,7 @@
             "const": "umbracoMediaArticle"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "umbracoFile": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoExtension": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoBytes": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int64"
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaArticlePropertiesModel"
           }
         },
         "additionalProperties": false
@@ -3156,29 +2524,7 @@
             "const": "umbracoMediaAudio"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "umbracoFile": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoExtension": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoBytes": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int64"
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaAudioPropertiesModel"
           }
         },
         "additionalProperties": false
@@ -3243,29 +2589,7 @@
             "const": "umbracoMediaVectorGraphics"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "umbracoFile": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoExtension": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoBytes": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int64"
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaVectorGraphicsPropertiesModel"
           }
         },
         "additionalProperties": false
@@ -3330,29 +2654,7 @@
             "const": "umbracoMediaVideo"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "umbracoFile": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoExtension": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "umbracoBytes": {
-                "type": [
-                  "null",
-                  "integer"
-                ],
-                "format": "int64"
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/UmbracoMediaVideoPropertiesModel"
           }
         },
         "additionalProperties": false
@@ -3417,28 +2719,7 @@
             "const": "video"
           },
           "properties": {
-            "type": "object",
-            "properties": {
-              "videoTitle": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "videoFile": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "thumbnailImage": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/IApiMediaWithCropsModel"
-                }
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/VideoPropertiesModel"
           }
         },
         "additionalProperties": false
