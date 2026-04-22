@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +19,7 @@ using Umbraco.Cms.Api.Delivery.Security;
 using Umbraco.Cms.Api.Delivery.Services;
 using Umbraco.Cms.Api.Delivery.Services.QueryBuilders;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -31,8 +31,20 @@ namespace Umbraco.Extensions;
 
 public static class UmbracoBuilderExtensions
 {
+    /// <summary>
+    /// Add services for the Umbraco Delivery API (headless content delivery).
+    /// </summary>
+    /// <remarks>
+    /// This method assumes that either <c>AddBackOffice()</c> or <c>AddCore()</c> has already been called.
+    /// It registers Delivery API-specific services such as controllers, output caching, and member authentication.
+    /// </remarks>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <returns>The Umbraco builder.</returns>
     public static IUmbracoBuilder AddDeliveryApi(this IUmbracoBuilder builder)
     {
+        // Delivery API supports member authentication for protected content
+        builder.AddMembersIdentity();
+
         builder.Services.AddScoped<IRequestStartItemProvider, RequestStartItemProvider>();
         builder.Services.AddScoped<RequestContextOutputExpansionStrategy>();
         builder.Services.AddScoped<RequestContextOutputExpansionStrategyV2>();
@@ -55,7 +67,6 @@ public static class UmbracoBuilderExtensions
             ServiceLifetime.Scoped);
 
         builder.Services.AddSingleton<IRequestCultureService, RequestCultureService>();
-        builder.Services.AddSingleton<IRequestSegmmentService, RequestSegmentService>();
         builder.Services.AddSingleton<IRequestSegmentService, RequestSegmentService>();
         builder.Services.AddSingleton<IRequestRoutingService, RequestRoutingService>();
         builder.Services.AddSingleton<IRequestRedirectService, RequestRedirectService>();
@@ -74,11 +85,11 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddTransient<IRequestMemberAccessService, RequestMemberAccessService>();
         builder.Services.AddTransient<ICurrentMemberClaimsProvider, CurrentMemberClaimsProvider>();
 
-        builder.Services.AddUmbracoApi<ConfigureUmbracoDeliveryApiOpenApiOptions>(DeliveryApiConfiguration.ApiName, DeliveryApiConfiguration.ApiTitle);
-
-        // Replaces the internal Microsoft OpenApiSchemaService in order to ensure the correct JSON options are used
-        builder.Services.ReplaceOpenApiSchemaService();
-        builder.AddUmbracoApiOpenApiUI();
+        builder.AddUmbracoOpenApi();
+        builder.AddUmbracoOpenApiDocument<ConfigureUmbracoDeliveryApiOpenApiOptions>(
+            DeliveryApiConfiguration.ApiName,
+            DeliveryApiConfiguration.ApiTitle,
+            Constants.JsonOptionsNames.DeliveryApi);
 
         builder
             .Services
@@ -130,7 +141,7 @@ public static class UmbracoBuilderExtensions
             {
                 options.AddPolicy(
                     Constants.DeliveryApi.OutputCache.ContentCachePolicy,
-                    new DeliveryApiOutputCachePolicy(
+                    new DeliveryApiOutputCacheContentPolicy(
                         outputCacheSettings.ContentDuration,
                         new StringValues([Constants.DeliveryApi.HeaderNames.AcceptLanguage, Constants.DeliveryApi.HeaderNames.AcceptSegment, Constants.DeliveryApi.HeaderNames.StartItem])));
             }
@@ -139,39 +150,23 @@ public static class UmbracoBuilderExtensions
             {
                 options.AddPolicy(
                     Constants.DeliveryApi.OutputCache.MediaCachePolicy,
-                    new DeliveryApiOutputCachePolicy(
+                    new DeliveryApiOutputCacheMediaPolicy(
                         outputCacheSettings.MediaDuration,
                         Constants.DeliveryApi.HeaderNames.StartItem));
             }
         });
 
-        builder.Services.Configure<UmbracoPipelineOptions>(options => options.AddFilter(new OutputCachePipelineFilter("UmbracoDeliveryApiOutputCache")));
+        // Register eviction handlers.
+        builder.AddNotificationAsyncHandler<ContentCacheRefresherNotification, DeliveryApiDocumentOutputCacheEvictionHandler>();
+        builder.AddNotificationAsyncHandler<MediaCacheRefresherNotification, DeliveryApiMediaOutputCacheEvictionHandler>();
+        builder.AddNotificationAsyncHandler<MemberCacheRefresherNotification, DeliveryApiMemberOutputCacheEvictionHandler>();
+
+        // Register extension point default implementations.
+        builder.Services.AddSingleton<IDeliveryApiOutputCacheTagProvider, DeliveryApiContentTypeOutputCacheTagProvider>();
+        builder.Services.AddUnique<IDeliveryApiOutputCacheRequestFilter, DefaultDeliveryApiOutputCacheRequestFilter>();
+        builder.Services.AddUnique<IDeliveryApiOutputCacheManager, DeliveryApiOutputCacheManager>();
+
         return builder;
     }
 
-    /// <summary>
-    /// Replaces the OpenApiSchemaService to use the Delivery API JSON serializer options, instead of the default http JSON options.
-    /// </summary>
-    /// <param name="serviceCollection">The <see cref="IServiceCollection"/>.</param>
-    /// <remarks>This is needed because the OpenAPI schema generation relies on the JSON options to determine how to generate the schemas.
-    /// There is a proposal to add support for this currently open: https://github.com/dotnet/aspnetcore/issues/60738.</remarks>
-    private static void ReplaceOpenApiSchemaService(this IServiceCollection serviceCollection)
-    {
-        ServiceDescriptor serviceDescriptor = serviceCollection
-            .FirstOrDefault(x => x.ServiceType.Name == "OpenApiSchemaService" && Equals(x.ServiceKey, DeliveryApiConfiguration.ApiName))
-            ?? throw new InvalidOperationException("Could not find the OpenApiSchemaService when replacing the registered implementation with one created with the delivery API JSON options.");
-
-        serviceCollection.Remove(serviceDescriptor);
-        serviceCollection.Add(
-            new ServiceDescriptor(
-                serviceDescriptor.ServiceType,
-                serviceDescriptor.ServiceKey,
-                (sp, serviceKey) => sp.CreateInstance(
-                    serviceDescriptor.KeyedImplementationType!,
-                    serviceKey!,
-                    Options.Create(
-                        sp.GetRequiredService<IOptionsMonitor<JsonOptions>>()
-                            .Get(Constants.JsonOptionsNames.DeliveryApi))),
-                ServiceLifetime.Singleton));
-    }
 }

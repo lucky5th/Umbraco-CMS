@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Api.Common.Configuration;
+using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Api.Delivery.OpenApi.Transformers;
 using Umbraco.Cms.Core.Configuration.Models;
 
@@ -45,9 +46,11 @@ public class ConfigureUmbracoDeliveryApiOpenApiOptions : ConfigureUmbracoOpenApi
             .AddDocumentTransformer<ApiKeyTransformer>()
             .AddOperationTransformer<ApiKeyTransformer>();
 
+        options.AddSchemaTransformer<RequireNonNullablePropertiesSchemaTransformer>();
+        options.AddSchemaTransformer<FixFileReturnTypesTransformer>();
+        options.AddOperationTransformer<MimeTypesTransformer>();
         options.AddOperationTransformer<ContentApiTransformer>();
         options.AddOperationTransformer<MediaApiTransformer>();
-        options.AddDocumentTransformer<MimeTypesTransformer>();
 
         if (_deliveryApiSettings.OpenApi.GenerateContentTypeSchemas)
         {
